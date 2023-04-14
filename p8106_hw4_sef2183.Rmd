@@ -27,6 +27,10 @@ In this exercise, we will build tree-based models using the “College” data. 
 ```{r}
 # read in data
 College <- read.csv("data/College.csv") 
+
+# remove the college variable from the dataset since the data is at the college level and it is the "id" variable
+College <- College %>%
+  select(-College)
 ```
 
 Partition the dataset into two parts: training data (80%) and test data (20%).
@@ -45,16 +49,7 @@ College_train <- College[trRows, ]
 College_test <- College[-trRows, ]
 ```
 
-```{r}
-# remove the college variable from the dataset since it is a character variable # CHECK ON THIS
-College_train <- College_train %>%
-  select(-College)
-
-College_test <- College_test %>%
-  select(-College)
-```
-
-## (a) Build a regression tree on the training data to predict the response. # PREDICT FUNC NEEDED?
+## (a) Build a regression tree on the training data to predict the response.
 
 ```{r}
 # create a cross-validation object
@@ -82,13 +77,15 @@ rpart.plot(rpart.fit$finalModel)
 
 ## (b) Perform random forest on the training data.
 
+The mtry specification was set to 4, which is the value of the square root of the number of predictors in the model (16).
+
 ```{r}
 set.seed(1)
 
 # build a random forest model on the training data using the randomForest function
 rf.fit <- randomForest(Outstate ~ . ,
                        data = College_train, # training data
-                       mtry = 6) # IS THIS RIGHT?
+                       mtry = 4)
 ```
 
 ### Variable importance
@@ -226,13 +223,11 @@ rpart.plot(rpart.fit$finalModel)
 
 ### Which tree size corresponds to the lowest cross-validation error? Is this the same as the tree size obtained using the 1 SE rule?
 
-The code below prints a table of the complexity parameter (cp) values, the corresponding number of terminal nodes (k), the cross-validation error (xerror), and the 1 standard error rule (xstd). 
+The code below prints a table of the complexity parameter (cp) values correspnding to the lowest cross-validation error and the 1 standard error rule. 
 
 **Lowest cross-validation error**
 
 ```{r}
-# find the tree size that corresponds to the lowest cross-validation error
-rpart.fit$finalModel$cptable # reports a table of cp values and the corresponding cv error
 rpart.fit$bestTune$cp # reports only the best cp value
 ```
 
@@ -245,8 +240,8 @@ The tree size obtained using the 1 SE rule is the one with the smalled value of 
 ```{r}
 # find the tree size obtained using the 1 SE rule
 cp.table <- data.frame(rpart.fit$results)
-cp.min <- which.min(cp.table$ROC) # finds the index of the row  that corresponds to the min ROC
-cp.1se <- cp.table$cp[which.min(abs(cp.table$ROC[1:cp.min] - (cp.table$ROC[cp.min] + cp.table$ROCSD[cp.min])))] # calculates the value of cp that corresponds to the 1-SE rule
+cp.min <- which.min(cp.table$ROC) # finds the index of the row that corresponds to the min ROC
+cp.1se <- cp.table$cp[which.min(abs(cp.table$ROC[1:cp.min] - (cp.table$ROC[cp.min] + cp.table$ROCSD[cp.min])))] # calculates the value of cp that corresponds to the 1 SE rule
 cp.1se
 ```
 
